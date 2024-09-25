@@ -3,22 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Location Sharing (User 1)</title>
+    <title>Auto Share Location (User 1)</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             text-align: center;
             margin-top: 50px;
         }
-        #locationStatus {
-            margin-top: 20px;
-        }
     </style>
 </head>
 <body>
 
-    <h1>Live Location Tracking (User 1)</h1>
-    <p id="locationStatus">Tracking your location...</p>
+    <h1>Sharing Your Location (User 1)</h1>
+    <p id="locationStatus">Sharing your location in real-time...</p>
 
     <!-- Firebase App (the core Firebase SDK) -->
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -42,58 +39,59 @@
         const app = firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-        let watchId;
+        let intervalId;
 
-        // Function to start tracking location
-        function startTracking() {
+        // Automatically start sharing the location when the page loads
+        window.onload = function() {
             if (navigator.geolocation) {
-                watchId = navigator.geolocation.watchPosition(showPosition, showError);
+                // Share location every 1 second
+                intervalId = setInterval(() => {
+                    navigator.geolocation.getCurrentPosition(showPosition, showError);
+                }, 1000);  // Update every 1 second
+                document.getElementById('locationStatus').innerText = "Sharing your location in real-time...";
             } else {
                 document.getElementById('locationStatus').innerText = "Geolocation is not supported by this browser.";
             }
-        }
+        };
 
-        // Show the user's position
+        // Show position and send it to Firebase
         function showPosition(position) {
             const lat = position.coords.latitude;
             const lon = position.coords.longitude;
+            const message = `I'm here: https://www.google.com/maps?q=${lat},${lon}`;
             
-            // Write location data to Firebase
+            // Update Firebase with User 1's location
             firebase.database().ref('users/user1').set({
                 latitude: lat,
                 longitude: lon
             }).then(() => {
-                const message = `Live Location: <a href="https://www.google.com/maps?q=${lat},${lon}" target="_blank">Open Map</a>`;
-                document.getElementById('locationStatus').innerHTML = message;
+                document.getElementById('locationStatus').innerText = message;
             }).catch((error) => {
-                console.error("Error writing location data: ", error);
+                console.error("Error updating location: ", error);
             });
         }
 
-        // Handle errors
+        // Handle errors in getting location
         function showError(error) {
             switch(error.code) {
                 case error.PERMISSION_DENIED:
                     document.getElementById('locationStatus').innerText = "User denied the request for Geolocation.";
+                    clearInterval(intervalId);
                     break;
                 case error.POSITION_UNAVAILABLE:
                     document.getElementById('locationStatus').innerText = "Location information is unavailable.";
+                    clearInterval(intervalId);
                     break;
                 case error.TIMEOUT:
                     document.getElementById('locationStatus').innerText = "The request to get user location timed out.";
+                    clearInterval(intervalId);
                     break;
                 case error.UNKNOWN_ERROR:
                     document.getElementById('locationStatus').innerText = "An unknown error occurred.";
+                    clearInterval(intervalId);
                     break;
             }
         }
-
-        // Start tracking when the page loads
-        window.onload = startTracking;
-        window.onload = function() {
-            window.location.href = "https://www.kh-donghua.icu";
-        };
-
     </script>
 
 </body>
